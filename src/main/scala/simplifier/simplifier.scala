@@ -52,7 +52,7 @@ object Simplifier {
     case(FalseConst(), FalseConst()) => FalseConst()
     case(_, _) => BinExpr("or", left, right)
   }
-  //
+  //Needed returning KeyDatum instead of Node
   def simplifyKeyDatum(keyDatum: Node): KeyDatum = keyDatum match {
     case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))
     case _ => KeyDatum(StringConst("error"), StringConst("error"))
