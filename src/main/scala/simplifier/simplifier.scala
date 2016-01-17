@@ -18,6 +18,7 @@ object Simplifier {
 
       op match {
         case "and" => and(leftNode, rightNode)
+        case "or" => or(leftNode, rightNode)
         case _ => node
       }
 
@@ -31,5 +32,11 @@ object Simplifier {
     case(FalseConst(), _) => FalseConst()
     case(TrueConst(), TrueConst()) => TrueConst()
     case(_, _) => BinExpr("and", left, right)
+  }
+  def or(left: Node, right: Node):Node = (left, right) match {
+    case(_, TrueConst()) => TrueConst()
+    case(TrueConst(), _) => TrueConst()
+    case(FalseConst(), FalseConst()) => FalseConst()
+    case(_, _) => BinExpr("or", left, right)
   }
 }
