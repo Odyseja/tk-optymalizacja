@@ -80,8 +80,8 @@ object Simplifier {
   def greater(left: Node, right: Node):Node = (left, right) match {
     case(_, _) => BinExpr(">", left, right)
   }
-  def evaluateExpression(op: String, left: Node, right: Node):Node = (op, left, right) match {
-    case _ => BinExpr(op, left, right)
+  def evaluateExpression(op: String, left: Node, right: Node):Node = (left, right) match {
+    case(_, _) => BinExpr(op, left, right)
   }
 
   //Needed returning KeyDatum instead of Node
