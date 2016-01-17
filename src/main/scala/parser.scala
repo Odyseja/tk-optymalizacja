@@ -34,6 +34,7 @@ class Parser extends JavaTokenParsers {
                                  "lambda\\b".r |
                                  "not\\b".r |
                                  "or\\b".r |
+                                 "elif\\b".r | //added
                                  "print\\b".r |
                                  "return\\b".r |
                                  "True\\b".r |

@@ -19,7 +19,19 @@ object Simplifier {
       op match {
         case "and" => and(left, right)
         case "or" => or(left, right)
-        case _ => node
+        case "==" => equals(left, right)
+        case "<=" => lowerOrEquals(left, right)
+        case ">=" => greaterOrEquals(left, right)
+        case "<" => lower(left, right)
+        case ">" => greater(left, right)
+        case _ => evaluateExpression(op, left, right)
+      }
+
+    }
+    case Unary(op, expr) => {
+      val simplyExpr: Node = simplify(expr)
+      op match {
+        case _ => Unary(op, simplyExpr)
       }
 
     }
@@ -40,6 +52,7 @@ object Simplifier {
     case ClassDef(name, inherit_list, suit) => ClassDef(name, simplify(inherit_list), simplify(suit))
     case _ => node
   }
+  //BinaryExpression helpers
   def and(left: Node, right: Node):Node = (left, right) match {
     case(_, FalseConst()) => FalseConst()
     case(FalseConst(), _) => FalseConst()
@@ -52,6 +65,25 @@ object Simplifier {
     case(FalseConst(), FalseConst()) => FalseConst()
     case(_, _) => BinExpr("or", left, right)
   }
+  def equals(left: Node, right: Node):Node = (left, right) match {
+    case(_, _) => BinExpr("==", left, right)
+  }
+  def lowerOrEquals(left: Node, right: Node):Node = (left, right) match {
+    case(_, _) => BinExpr("<=", left, right)
+  }
+  def greaterOrEquals(left: Node, right: Node):Node = (left, right) match {
+    case(_, _) => BinExpr(">=", left, right)
+  }
+  def lower(left: Node, right: Node):Node = (left, right) match {
+    case(_, _) => BinExpr("<", left, right)
+  }
+  def greater(left: Node, right: Node):Node = (left, right) match {
+    case(_, _) => BinExpr(">", left, right)
+  }
+  def evaluateExpression(op: String, left: Node, right: Node):Node = (op, left, right) match {
+    case _ => BinExpr(op, left, right)
+  }
+
   //Needed returning KeyDatum instead of Node
   def simplifyKeyDatum(keyDatum: Node): KeyDatum = keyDatum match {
     case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))
