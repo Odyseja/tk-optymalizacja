@@ -12,19 +12,32 @@ object Simplifier {
   //def simplify(node: Node) = node
 
   def simplify(node: Node): Node = node match {
-    case BinExpr(op, left, right) => {
-      val leftNode: Node = simplify(left)
-      val rightNode: Node = simplify(right)
+    case BinExpr(op, leftNode, rightNode) => {
+      val left: Node = simplify(leftNode)
+      val right: Node = simplify(rightNode)
 
       op match {
-        case "and" => and(leftNode, rightNode)
-        case "or" => or(leftNode, rightNode)
+        case "and" => and(left, right)
+        case "or" => or(left, right)
         case _ => node
       }
 
     }
     case NodeList(list) => NodeList(list.map{case f => simplify(f)})
+    case KeyDatumList(list) => KeyDatumList(list.map{case f => simplifyKeyDatum(f)})
+    case ElemList(list) => ElemList(list.map{case f => simplify(f)})
     case IfInstr(cond, body) => IfInstr(simplify(cond), simplify(body))
+    case IfElseInstr(cond, myIf, myElse) => IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+    case Assignment(variable, assign) => Assignment(variable, simplify(assign))
+    case ReturnInstr(expr) => ReturnInstr(simplify(expr))
+    case PrintInstr(expr) => PrintInstr(simplify(expr))
+    case WhileInstr(cond, body) => WhileInstr(simplify(cond), simplify(body))
+    case Subscription(primary, expression_list) => Subscription(simplify(primary), simplify(expression_list))
+    case GetAttr(expr, attr) => GetAttr(simplify(expr), attr)
+    case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))
+    case FunCall(name, args) => FunCall(name, simplify(args))
+    case FunDef(name, formal_args, body) => FunDef(name, simplify(formal_args), simplify(body))
+    case ClassDef(name, inherit_list, suit) => ClassDef(name, simplify(inherit_list), simplify(suit))
     case _ => node
   }
   def and(left: Node, right: Node):Node = (left, right) match {
@@ -38,5 +51,10 @@ object Simplifier {
     case(TrueConst(), _) => TrueConst()
     case(FalseConst(), FalseConst()) => FalseConst()
     case(_, _) => BinExpr("or", left, right)
+  }
+  //
+  def simplifyKeyDatum(keyDatum: Node): KeyDatum = keyDatum match {
+    case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))
+    case _ => KeyDatum(StringConst("error"), StringConst("error"))
   }
 }
