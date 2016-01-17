@@ -1,4 +1,4 @@
-package main.scala.simplifier
+package simplifier
 
 import AST._
 

@@ -1,4 +1,4 @@
-package main.scala.AST
+package AST
 
 object Priority {
     val binary = Map("lambda"->1,

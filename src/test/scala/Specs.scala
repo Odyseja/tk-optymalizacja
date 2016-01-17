@@ -1,33 +1,28 @@
-package test.scala
-
 import org.specs2.mutable._
-
-import org.antlr.v4.runtime.{ANTLRInputStream,CommonTokenStream,RecognitionException}
-import parser.{PythonLexer,PythonParser}
 import AST._
-
 import simplifier.Simplifier.simplify
 
- 
+
 class parserSpec extends Specification {
+
+  val parser = new Parser()
 
   def parseString(str: String): Node = {
 
-    val lexer = new PythonLexer(new ANTLRInputStream(str+"\n"))
-    val tokens = new CommonTokenStream(lexer)
-    val parser = new PythonParser(tokens)
-    parser.setErrorHandler(new BailErrorStrategy());
-    val visitor = new ConcretePythonVisitor
-    val tree = parser.program().accept(visitor)
-    val simplified_tree = simplify(tree)
-    simplified_tree
+    val parseResult = parser.parseAll(parser.program, str+"\n")
+
+    parseResult match {
+       case parser.Success(result: List[AST.Node], in) => simplify(NodeList(result))
+       case parser.NoSuccess(msg: String, in) => throw new IllegalArgumentException("FAILURE Could not parse '" + str + "': " + msg)
+    }
   }
+
 
   "parser" should {
 
     "fail on incorrect input" in {
-      parseString("x+y=x") must throwA[RecognitionException]
-      parseString("a not b") must throwA[RecognitionException]
+      parseString("x+y=x") must throwA[IllegalArgumentException]
+      parseString("a not b") must throwA[IllegalArgumentException]
     }
 
     "recognize elif branches in if-else stmts" in {
@@ -48,20 +43,20 @@ class parserSpec extends Specification {
                       y = 1
                    } """
 
-      parseString(if_stmt_str) must not(throwA[RecognitionException])
+      parseString(if_stmt_str) must not(throwA[IllegalArgumentException])
     }
 
 
     "parse expressions" in {
-      parseString("True") mustEqual TrueConst()
-      parseString("False") mustEqual FalseConst()
-      parseString("1") mustEqual IntNum(1)
-      parseString("a") mustEqual Variable("a")
-      parseString("-a") mustEqual Unary("-",Variable("a"))
-      parseString("a+b") mustEqual BinExpr("+",Variable("a"),Variable("b"))
-      parseString("not a+b") mustEqual Unary("not",BinExpr("+",Variable("a"),Variable("b")))
-      parseString("f(x)") mustEqual FunCall(Variable("f"),NodeList(List(Variable("x"))))
-      parseString("x.y") mustEqual GetAttr(Variable("x"),"y")
+      parser.parseAll(parser.expression,"True") mustEqual TrueConst()
+      parser.parseAll(parser.expression,"False") mustEqual FalseConst()
+      parser.parseAll(parser.expression, "1") mustEqual IntNum(1)
+      parser.parseAll(parser.expression, "a") mustEqual Variable("a")
+      parser.parseAll(parser.expression, "-a") mustEqual Unary("-",Variable("a"))
+      parser.parseAll(parser.expression, "a+b") mustEqual BinExpr("+",Variable("a"),Variable("b"))
+      parser.parseAll(parser.expression, "not a+b") mustEqual Unary("not",BinExpr("+",Variable("a"),Variable("b")))
+      parser.parseAll(parser.expression, "f(x)") mustEqual FunCall(Variable("f"),NodeList(List(Variable("x"))))
+      parser.parseAll(parser.expression, "x.y") mustEqual GetAttr(Variable("x"),"y")
     }
 
   }
@@ -69,12 +64,11 @@ class parserSpec extends Specification {
   "simplifier" should {
 
     "recognize tuples" in {
-      parseString("x=(a,b,c)") must not(throwA[RecognitionException])
+      parseString("x=(a,b,c)") must not(throwA[IllegalArgumentException])
       parseString("(x,y)+(u,v)") mustEqual parseString("(x,y,u,v)")
     }
-
     "recognize power laws" in {
-      parseString("x**y*x**z") must not(throwA[RecognitionException])
+      parseString("x**y*x**z") must not(throwA[IllegalArgumentException])
       parseString("x**y*x**z") mustEqual parseString("x**(y+z)")
       parseString("2**3**2") mustEqual parseString("512")
       parseString("x**0") mustEqual parseString("1")
@@ -84,7 +78,7 @@ class parserSpec extends Specification {
       parseString("(x+y)**2-x**2-2*x*y") mustEqual parseString("y**2")
       parseString("(x+y)**2-(x-y)**2") mustEqual parseString("4*x*y")
     }
- 
+
     "evaluate constants" in {
       parseString("2+3*5") mustEqual parseString("17")
       parseString("not False") mustEqual parseString("True")
@@ -108,8 +102,8 @@ class parserSpec extends Specification {
       parseString("-x+x") mustEqual parseString("0")
       parseString("x*1") mustEqual parseString("x")
       parseString("1*x") mustEqual parseString("x")
-      parseString("x*0") mustEqual parseString("0")
       parseString("0*x") mustEqual parseString("0")
+      parseString("x or x") mustEqual parseString("x")
       parseString("x or x") mustEqual parseString("x")
       parseString("x and x") mustEqual parseString("x")
       parseString("x or True") mustEqual parseString("True")
@@ -189,14 +183,14 @@ class parserSpec extends Specification {
       parseString(if_expr_str.format("True")) mustEqual parseString("x=y")
       parseString(if_expr_str.format("False")) mustEqual parseString("x=z")
     }   
-  
+
     "remove while loop with False condition" in {
-      val while_stmt_str = """while False:
+      val str = """while False:
                    { 
                       x = x + 1
                    } """
                    
-      parseString(while_stmt_str) mustEqual parseString("")
+      parseString(str) mustEqual parseString("")
     }
 
 
