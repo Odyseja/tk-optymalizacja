@@ -1,4 +1,4 @@
-if False and x:
+if x and False:
 {
     x=x+1
 }

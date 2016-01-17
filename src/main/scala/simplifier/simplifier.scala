@@ -29,6 +29,7 @@ object Simplifier {
   def and(left: Node, right: Node):Node = (left, right) match {
     case(_, FalseConst()) => FalseConst()
     case(FalseConst(), _) => FalseConst()
+    case(TrueConst(), TrueConst()) => TrueConst()
     case(_, _) => BinExpr("and", left, right)
   }
 }
