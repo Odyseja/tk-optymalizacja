@@ -46,13 +46,19 @@ object Simplifier {
 
     }
     case NodeList(list) => {
-      val a = list.filterNot(f => (simplify(f) == null))
-      NodeList(a.map {
-          case f => simplify(f)
-        })
+      var a = list.map {
+        case f => simplify(f)
+      }
+      a=a.filterNot(f => (f == null))
+      var assignments = a.filter(f => (f.isInstanceOf[Assignment]))
+      a=a.filterNot(f => f.isInstanceOf[Assignment])
+
+      assignments=assignments.map(f => assignments(assignments.lastIndexWhere(f1 => isTheSameAssignment(f, f1))))
+
+      a=a++assignments.distinct
+      a=a.filterNot(f => (f == null))
+      NodeList(a)
     }
-
-
     case KeyDatumList(list) => KeyDatumList(list.map{case f => simplifyKeyDatum(f)})
     case ElemList(list) => {
 
@@ -102,6 +108,14 @@ object Simplifier {
     case ClassDef(name, inherit_list, suit) => ClassDef(name, simplify(inherit_list), simplify(suit))
     case _ => node
   }
+  def isTheSameAssignment(template: Node, actual: Node):Boolean = (template, actual) match {
+    case (Assignment(left, right), Assignment(left2, right2)) => {
+      if(left==left2) true
+      else false
+    }
+    case _ => false
+  }
+
   //BinaryExpression helpers
   def and(left: Node, right: Node):Node = (left, right) match {
     case(_, FalseConst()) => FalseConst()
