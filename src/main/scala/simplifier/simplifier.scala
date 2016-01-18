@@ -46,8 +46,8 @@ object Simplifier {
 
     }
     case NodeList(list) => {
-        val a = list.filter(f => (simplify(f) == null))
-        NodeList(a.map {
+      val a = list.filterNot(f => (simplify(f) == null))
+      NodeList(a.map {
           case f => simplify(f)
         })
     }
@@ -68,11 +68,15 @@ object Simplifier {
       val right: Node = simplify(assign)
       if (left == right) null
       else
-      Assignment(variable, simplify(assign))
+        Assignment(variable, simplify(assign))
     }
     case ReturnInstr(expr) => ReturnInstr(simplify(expr))
     case PrintInstr(expr) => PrintInstr(simplify(expr))
-    case WhileInstr(cond, body) => WhileInstr(simplify(cond), simplify(body))
+    case WhileInstr(cond, body) => {
+      val condition = simplify(cond)
+      if(condition == FalseConst()) null
+      else WhileInstr(simplify(cond), simplify(body))
+    }
     case Subscription(primary, expression_list) => Subscription(simplify(primary), simplify(expression_list))
     case GetAttr(expr, attr) => GetAttr(simplify(expr), attr)
     case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))
