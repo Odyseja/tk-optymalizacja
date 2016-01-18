@@ -191,6 +191,10 @@ object Simplifier {
     case(_, _) => BinExpr(">", left, right)
   }
   def add(left: Node, right: Node):Node = (left, right) match {
+    case(ElemList(List()),ElemList(List())) =>ElemList(List())
+    case(ElemList(List()),ElemList(n)) =>ElemList(n)
+    case(ElemList(n),ElemList(List())) =>ElemList(n)
+    case(ElemList(n),ElemList(m)) =>ElemList(n ::: m)
     case(nodeLeft,IntNum(zero) ) if zero == 0 => nodeLeft
     case(IntNum(zero), nodeRight ) if zero == 0 => nodeRight
     case(mirrorLeft,Unary("-", mirrorRight) ) if (mirrorLeft == mirrorRight) => IntNum(0)
