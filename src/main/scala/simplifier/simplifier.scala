@@ -59,11 +59,16 @@ object Simplifier {
       a=a.filterNot(f => (f == null))
       NodeList(a)
     }
-    case KeyDatumList(list) => KeyDatumList(list.map{case f => simplifyKeyDatum(f)})
+    case KeyDatumList(list) => {
+      var a = list.map {
+        case f => simplifyKeyDatum(f)
+      }
+      a=a.map(f => a(a.lastIndexWhere(f1 => isTheSameKeyDatum(f, f1))))
+      a=a.distinct
+      KeyDatumList(a)
+    }
     case ElemList(list) => {
-
       val a = list.filterNot(f =>(simplify(f)==null))
-
       ElemList(a.map{
         case f => simplify(f)
       })}
@@ -115,7 +120,13 @@ object Simplifier {
     }
     case _ => false
   }
-
+  def isTheSameKeyDatum(template: Node, actual: Node):Boolean = (template, actual) match {
+    case (KeyDatum(left, right), KeyDatum(left2, right2)) => {
+      if(left==left2) true
+      else false
+    }
+    case _ => false
+  }
   //BinaryExpression helpers
   def and(left: Node, right: Node):Node = (left, right) match {
     case(_, FalseConst()) => FalseConst()
