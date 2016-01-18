@@ -46,19 +46,10 @@ object Simplifier {
 
     }
     case NodeList(list) => {
-      //if (list.isEmpty) null
-      //else
-      //{
-      if(list.isEmpty) NodeList(List())
-      list match {
-        case List(null) => List()
-        case List() =>
-      }
-        val a = list.filterNot(f => (simplify(f) == null))
-        NodeList(list.map {
+        val a = list.filter(f => (simplify(f) == null))
+        NodeList(a.map {
           case f => simplify(f)
         })
-      //}
     }
 
 
