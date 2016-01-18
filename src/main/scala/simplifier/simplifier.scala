@@ -3,6 +3,7 @@ package simplifier
 import javax.security.auth.login.FailedLoginException
 
 import AST._
+import com.sun.javafx.fxml.expression.BinaryExpression
 
 // to implement
 // avoid one huge match of cases
@@ -25,8 +26,20 @@ object Simplifier {
         case ">=" => greaterOrEquals(left, right)
         case "<" => lower(left, right)
         case ">" => greater(left, right)
-        case "+" => add(left,right)
-        case "-" => sub(left,right)
+        case "+" => {
+          val bin = add(left,right)
+          bin match {
+              case BinExpr(op1, left1, right1) => commutativity(op1, left1, right1)
+              case _ => bin
+            }
+        }
+        case "-" =>  {
+          val bin = sub(left,right)
+          bin match {
+            case BinExpr(op1, left1, right1) => commutativity(op1, left1, right1)
+            case _ => bin
+          }
+        }
         case "*" => multiply(left,right)
         case "/" => divide(left,right)
         case "%" => modulo(left,right)
@@ -306,5 +319,19 @@ object Simplifier {
   def simplifyKeyDatum(keyDatum: Node): KeyDatum = keyDatum match {
     case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))
     case _ => KeyDatum(StringConst("error"), StringConst("error"))
+  }
+
+  def commutativity(op: String, left:Node, right:Node): Node = (op, left, right) match{
+    case ("-", BinExpr("+", left1, left2), x) => {
+      if(left1.isInstanceOf[Variable] && x.isInstanceOf[Variable] && left1==x) left2
+      else if(left2.isInstanceOf[Variable] && x.isInstanceOf[Variable] && left2==x) left1
+      else BinExpr(op, left, right)
+    }
+    case ("+", BinExpr("-", left1, left2), x) => {
+      if(left2.isInstanceOf[Variable] && x.isInstanceOf[Variable] && x==left2) left1
+      else if(left1.isInstanceOf[Variable] && x.isInstanceOf[Variable] && left1==x) simplify(Unary("-", left2))
+      else BinExpr(op, left, right)
+    }
+    case(_, _, _) => BinExpr(op, left, right)
   }
 }
