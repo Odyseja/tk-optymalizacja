@@ -45,12 +45,33 @@ object Simplifier {
       }
 
     }
-    case NodeList(list) => NodeList(list.map{case f => simplify(f)})
+    case NodeList(list) => {
+      //if (list.isEmpty) null
+      //else
+      //{
+        var a = list.filterNot(f => (simplify(f) == null))
+        NodeList(list.map {
+          case f => simplify(f)
+        })
+      //}
+    }
+
+
     case KeyDatumList(list) => KeyDatumList(list.map{case f => simplifyKeyDatum(f)})
-    case ElemList(list) => ElemList(list.map{case f => simplify(f)})
+    case ElemList(list) => {
+      var a = list.filterNot(f =>(simplify(f)==null))
+      ElemList(a.map{
+        case f => simplify(f)
+      })}
     case IfInstr(cond, body) => IfInstr(simplify(cond), simplify(body))
     case IfElseInstr(cond, myIf, myElse) => IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
-    case Assignment(variable, assign) => Assignment(variable, simplify(assign))
+    case Assignment(variable, assign)=> {
+      val left: Node = simplify(variable)
+      val right: Node = simplify(assign)
+      if (left == right) null
+      else
+      Assignment(variable, simplify(assign))
+    }
     case ReturnInstr(expr) => ReturnInstr(simplify(expr))
     case PrintInstr(expr) => PrintInstr(simplify(expr))
     case WhileInstr(cond, body) => WhileInstr(simplify(cond), simplify(body))
