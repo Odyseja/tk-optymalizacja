@@ -49,7 +49,12 @@ object Simplifier {
       //if (list.isEmpty) null
       //else
       //{
-        var a = list.filterNot(f => (simplify(f) == null))
+      if(list.isEmpty) NodeList(List())
+      list match {
+        case List(null) => List()
+        case List() =>
+      }
+        val a = list.filterNot(f => (simplify(f) == null))
         NodeList(list.map {
           case f => simplify(f)
         })
@@ -59,7 +64,9 @@ object Simplifier {
 
     case KeyDatumList(list) => KeyDatumList(list.map{case f => simplifyKeyDatum(f)})
     case ElemList(list) => {
-      var a = list.filterNot(f =>(simplify(f)==null))
+
+      val a = list.filterNot(f =>(simplify(f)==null))
+
       ElemList(a.map{
         case f => simplify(f)
       })}
