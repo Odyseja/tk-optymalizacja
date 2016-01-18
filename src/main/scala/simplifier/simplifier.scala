@@ -46,7 +46,8 @@ object Simplifier {
 
     }
     case NodeList(list) => {
-        val a = list.filter(f => (simplify(f) == null))
+
+      val a = list.filterNot(f => (simplify(f) == null))
         NodeList(a.map {
           case f => simplify(f)
         })
@@ -68,7 +69,7 @@ object Simplifier {
       val right: Node = simplify(assign)
       if (left == right) null
       else
-      Assignment(variable, simplify(assign))
+        Assignment(variable, simplify(assign))
     }
     case ReturnInstr(expr) => ReturnInstr(simplify(expr))
     case PrintInstr(expr) => PrintInstr(simplify(expr))
@@ -156,6 +157,10 @@ object Simplifier {
     case(_, _) => BinExpr(">", left, right)
   }
   def add(left: Node, right: Node):Node = (left, right) match {
+    case(BinExpr("*",BinExpr("+",z,y),v),BinExpr("*",x,BinExpr("+",z2,y2)))
+      if z == z2 && y == y2 => {
+      simplify(BinExpr("*",simplify(BinExpr("+",v,x)),simplify(BinExpr("+", y, z))))
+    }
     case(nodeLeft,IntNum(zero) ) if zero == 0 => nodeLeft
     case(IntNum(zero), nodeRight ) if zero == 0 => nodeRight
     case(mirrorLeft,Unary("-", mirrorRight) ) if (mirrorLeft == mirrorRight) => IntNum(0)
@@ -164,7 +169,12 @@ object Simplifier {
     case(FloatNum(nodeLeft), FloatNum(nodeRight)) => FloatNum(nodeLeft + nodeRight)
     case(IntNum(nodeLeft), FloatNum(nodeRight)) => FloatNum(nodeLeft + nodeRight)
     case(FloatNum(nodeLeft), IntNum(nodeRight)) => FloatNum(nodeLeft + nodeRight)
-    case(nodeLeft, nodeRight) => BinExpr("+", nodeRight,nodeLeft) ///////
+    case(BinExpr("+",BinExpr("*",y,v2),sth),BinExpr("*",z,v)) if v == v2 => simplify(BinExpr("+",simplify(BinExpr("*",simplify(BinExpr("+",z,y)),v2)),sth))
+    case(BinExpr("*",leftNode,IntNum(numl)),rightNode) if(leftNode==rightNode) => simplify(BinExpr("*",IntNum(numl + 1), rightNode))
+    case(BinExpr("*",leftNode,IntNum(numl)),BinExpr("*",IntNum(numr),rightNode)) if(leftNode==rightNode) => simplify(BinExpr("*",IntNum(numl + numr), rightNode))
+    case(BinExpr("*",z1,x),BinExpr("*",z2,y)) if z1 == z2 => simplify(BinExpr("*",simplify(simplify(BinExpr("+",x,y))),simplify(simplify(z1))))
+    case(BinExpr("*",x, z1),BinExpr("*",y, z2)) if z1 == z2 => simplify(BinExpr("*",simplify(simplify(z1)),simplify(simplify(BinExpr("+",x,y)))))
+    case(nodeLeft, nodeRight) => BinExpr("+", nodeRight,nodeLeft)
     case(_, _) => BinExpr("+", left, right)
   }
   def sub(left: Node, right: Node):Node = (left, right) match {
@@ -175,17 +185,21 @@ object Simplifier {
     case(FloatNum(nodeLeft), FloatNum(nodeRight)) => FloatNum(nodeLeft - nodeRight)
     case(IntNum(nodeLeft), FloatNum(nodeRight)) => FloatNum(nodeLeft - nodeRight)
     case(FloatNum(nodeLeft), IntNum(nodeRight)) => FloatNum(nodeLeft - nodeRight)
+    case(BinExpr("*",leftNode,IntNum(numl)),rightNode) if(leftNode==rightNode) => simplify(BinExpr("*",IntNum(numl - 1), rightNode))
+    case(BinExpr("*",leftNode,IntNum(numl)),BinExpr("*",IntNum(numr),rightNode)) if(leftNode==rightNode) => simplify(BinExpr("*",IntNum(numl - numr), rightNode))
+    case(BinExpr("*",z1,x),BinExpr("*",z2,y)) if z1 == z2 => simplify(BinExpr("*",simplify(BinExpr("-",x,y)),z1))
+    case(BinExpr("*",x, z1),BinExpr("*",y, z2)) if z1 == z2 => simplify(BinExpr("*",z1,simplify(BinExpr("-",x,y))))
     case(_, _) => BinExpr("-", left, right)
   }
   def multiply(left: Node, right: Node):Node = (left, right) match {
     case(IntNum(zero), _ ) if zero == 0 => IntNum(0)
     case( _, IntNum(zero) ) if zero == 0 => IntNum(0)
+    case(IntNum(one) , nodeRight ) if one == 1 => nodeRight
+    case( nodeLeft , IntNum(one) ) if one == 1 => nodeLeft
     case(IntNum(nodeLeft), IntNum(nodeRight)) => IntNum(nodeLeft * nodeRight)
     case(FloatNum(nodeLeft), FloatNum(nodeRight)) => FloatNum(nodeLeft * nodeRight)
     case(IntNum(nodeLeft), FloatNum(nodeRight)) => FloatNum(nodeLeft * nodeRight)
     case(FloatNum(nodeLeft), IntNum(nodeRight)) => FloatNum(nodeLeft * nodeRight)
-    case( nodeLeft , IntNum(one) ) if one == 1 => nodeLeft
-    case(IntNum(one) , nodeRight ) if one == 1 => nodeRight
     case(nodeLeft, BinExpr("/", IntNum(one), nodeRight)) if one == 1 => BinExpr("/", nodeLeft,nodeRight)
     case(nodeLeft, nodeRight) => BinExpr("*", nodeRight,nodeLeft)
     case(_, _) => BinExpr("*", left, right)
