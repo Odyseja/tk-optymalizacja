@@ -46,9 +46,8 @@ object Simplifier {
 
     }
     case NodeList(list) => {
-
       val a = list.filterNot(f => (simplify(f) == null))
-        NodeList(a.map {
+      NodeList(a.map {
           case f => simplify(f)
         })
     }
@@ -62,8 +61,25 @@ object Simplifier {
       ElemList(a.map{
         case f => simplify(f)
       })}
-    case IfInstr(cond, body) => IfInstr(simplify(cond), simplify(body))
-    case IfElseInstr(cond, myIf, myElse) => IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+    case IfInstr(cond, body) => {
+      val condition = simplify(cond)
+      val newBody = simplify(body)
+      if(condition==FalseConst()) null
+      else if(condition==TrueConst()) newBody
+      else IfInstr(condition, newBody)
+    }
+    case IfElseInstr(cond, myIf, myElse) => {
+      val condition = simplify(cond)
+      if(condition==TrueConst()) simplify(myIf)
+      else if(condition==FalseConst()) simplify(myElse)
+      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+    }
+    case IfElseExpr(cond, myIf, myElse) => {
+      val condition = simplify(cond)
+      if(condition==TrueConst()) simplify(myIf)
+      else if(condition==FalseConst()) simplify(myElse)
+      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+    }
     case Assignment(variable, assign)=> {
       val left: Node = simplify(variable)
       val right: Node = simplify(assign)
@@ -73,7 +89,11 @@ object Simplifier {
     }
     case ReturnInstr(expr) => ReturnInstr(simplify(expr))
     case PrintInstr(expr) => PrintInstr(simplify(expr))
-    case WhileInstr(cond, body) => WhileInstr(simplify(cond), simplify(body))
+    case WhileInstr(cond, body) => {
+      val condition = simplify(cond)
+      if(condition == FalseConst()) null
+      else WhileInstr(condition, simplify(body))
+    }
     case Subscription(primary, expression_list) => Subscription(simplify(primary), simplify(expression_list))
     case GetAttr(expr, attr) => GetAttr(simplify(expr), attr)
     case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))

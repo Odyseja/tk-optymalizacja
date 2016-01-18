@@ -186,10 +186,10 @@ class parserSpec extends Specification {
 
     "remove while loop with False condition" in {
       val str = """while False:
-                   { 
+                   {
                       x = x + 1
                    } """
-                   
+
       parseString(str) mustEqual parseString("")
     }
 
