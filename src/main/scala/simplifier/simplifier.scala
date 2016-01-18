@@ -61,8 +61,25 @@ object Simplifier {
       ElemList(a.map{
         case f => simplify(f)
       })}
-    case IfInstr(cond, body) => IfInstr(simplify(cond), simplify(body))
-    case IfElseInstr(cond, myIf, myElse) => IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+    case IfInstr(cond, body) => {
+      val condition = simplify(cond)
+      val newBody = simplify(body)
+      if(condition==FalseConst()) null
+      else if(condition==TrueConst()) newBody
+      else IfInstr(condition, newBody)
+    }
+    case IfElseInstr(cond, myIf, myElse) => {
+      val condition = simplify(cond)
+      if(condition==TrueConst()) simplify(myIf)
+      else if(condition==FalseConst()) simplify(myElse)
+      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+    }
+    case IfElseExpr(cond, myIf, myElse) => {
+      val condition = simplify(cond)
+      if(condition==TrueConst()) simplify(myIf)
+      else if(condition==FalseConst()) simplify(myElse)
+      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+    }
     case Assignment(variable, assign)=> {
       val left: Node = simplify(variable)
       val right: Node = simplify(assign)
@@ -75,7 +92,7 @@ object Simplifier {
     case WhileInstr(cond, body) => {
       val condition = simplify(cond)
       if(condition == FalseConst()) null
-      else WhileInstr(simplify(cond), simplify(body))
+      else WhileInstr(condition, simplify(body))
     }
     case Subscription(primary, expression_list) => Subscription(simplify(primary), simplify(expression_list))
     case GetAttr(expr, attr) => GetAttr(simplify(expr), attr)
