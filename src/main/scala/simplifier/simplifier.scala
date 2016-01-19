@@ -157,8 +157,8 @@ object Simplifier {
       case(IntNum(n), IntNum(m)) => IntNum(scala.math.pow(n.toDouble, m.toDouble).toInt)
       case(BinExpr("**",Variable(x),Variable(n)),Variable(m)) =>  BinExpr("**",Variable(x),BinExpr("*",Variable(n),Variable(m)))
 
-//      case(x,BinExpr("+", n, m)) => BinExpr("**",x,BinExpr("+",m,n))
-//      case(x,BinExpr("*", n, m)) => BinExpr("**",x,BinExpr("*",m,n))
+      case(x,BinExpr("+", n, m)) => BinExpr("**",x,BinExpr("+",m,n))
+      case(x,BinExpr("*", n, m)) => BinExpr("**",x,BinExpr("*",m,n))
     case(_, _) => BinExpr("**", left, right)
   }
 
@@ -234,9 +234,10 @@ object Simplifier {
   }
   def add(left: Node, right: Node):Node = (left, right) match {
     case(Tuple(list1),Tuple(list2)) =>Tuple(list1++list2)
-   // case(BinExpr("**",y,IntNum(two1)),BinExpr("+",BinExpr("*",y1,BinExpr("*",x1,IntNum(two))),BinExpr("**",x,IntNum(two2))) =>
-      //if (y==y1 && x==x1 && two1 == two ==  two2 == 2 ) =>
-     // BinExpr("**",BinExpr("+",x,y),IntNum(2))
+    case(BinExpr("+",BinExpr("*",y1,BinExpr("*",x1,IntNum(two))),BinExpr("**",x,IntNum(two2))),BinExpr("**",y,IntNum(two1)))
+      if (y==y1 && x==x1  )
+    =>
+      BinExpr("**",BinExpr("+",y, x),IntNum(2))
     case(ElemList(List()),ElemList(List())) =>ElemList(List())
     case(ElemList(List()),ElemList(n)) =>ElemList(n)
     case(ElemList(n),ElemList(List())) =>ElemList(n)
