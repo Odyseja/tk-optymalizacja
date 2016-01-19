@@ -70,7 +70,8 @@ object Simplifier {
 
       a=a++assignments.distinct
       a=a.filterNot(f => (f == null))
-      NodeList(a)
+      if(a.size==1) a.head
+      else  NodeList(a)
     }
     case KeyDatumList(list) => {
       var a = list.map {
@@ -158,7 +159,6 @@ object Simplifier {
     case(nodeLeft, TrueConst()) => nodeLeft
     case(nodeLeft,nodeRight) if nodeLeft == simplify(nodeRight) => nodeLeft
     case(nodeLeft, nodeRight) => BinExpr("and", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("and", left, right)
   }
   def or(left: Node, right: Node):Node = (left, right) match {
     case(_, TrueConst()) => TrueConst()
@@ -168,7 +168,6 @@ object Simplifier {
     case(FalseConst(),nodeRight) => nodeRight
     case(nodeLeft,nodeRight) if nodeLeft == simplify(nodeRight) => nodeLeft
     case(nodeLeft, nodeRight) => BinExpr("or", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("or", left, right)
   }
   def equals(left: Node, right: Node):Node = (left, right) match {
     case(equalLeft, equalRight) if (equalLeft == equalRight) => TrueConst()
@@ -178,7 +177,6 @@ object Simplifier {
     case(FloatNum(nodeLeft), FloatNum(nodeRight)) => if (nodeLeft == nodeRight) TrueConst() else  FalseConst()
     case(StringConst(nodeLeft), StringConst(nodeRight)) => if (nodeLeft == nodeRight) TrueConst() else  FalseConst()
     case(nodeLeft, nodeRight) => BinExpr("==", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("==", left, right)
   }
 
   def notequals(left: Node, right: Node):Node = (left, right) match {
@@ -189,7 +187,6 @@ object Simplifier {
     case(FloatNum(nodeLeft), FloatNum(nodeRight)) => if (nodeLeft != nodeRight) TrueConst() else  FalseConst()
     case(StringConst(nodeLeft), StringConst(nodeRight)) => if (nodeLeft != nodeRight) TrueConst() else  FalseConst()
     case(nodeLeft, nodeRight) => BinExpr("!=", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("!=", left, right)
   }
   def lowerOrEquals(left: Node, right: Node):Node = (left, right) match {
     case(equalLeft, equalRight) if (equalLeft == equalRight) => TrueConst()
@@ -247,7 +244,6 @@ object Simplifier {
       simplify(BinExpr("*",simplify(BinExpr("+",v,x)),simplify(BinExpr("+", y, z))))
     }
     case(nodeLeft, nodeRight) => BinExpr("+", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("+", left, right)
   }
   def sub(left: Node, right: Node):Node = (left, right) match {
     case(nodeLeft,IntNum(zero) ) if zero == 0 => nodeLeft
@@ -274,7 +270,6 @@ object Simplifier {
     case(FloatNum(nodeLeft), IntNum(nodeRight)) => FloatNum(nodeLeft * nodeRight)
     case(nodeLeft, BinExpr("/", IntNum(one), nodeRight)) if one == 1 => BinExpr("/", nodeLeft,nodeRight)
     case(nodeLeft, nodeRight) => BinExpr("*", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("*", left, right)
   }
   def divide(left: Node, right: Node):Node = (left, right) match {
     case(nodeLeft,nodeRight) if( simplify(nodeLeft)== simplify(nodeRight))=> IntNum(1) //////
