@@ -215,6 +215,7 @@ object Simplifier {
     case(_, _) => BinExpr(">", left, right)
   }
   def add(left: Node, right: Node):Node = (left, right) match {
+    case(Tuple(list1),Tuple(list2)) =>Tuple(list1++list2)
     case(ElemList(List()),ElemList(List())) =>ElemList(List())
     case(ElemList(List()),ElemList(n)) =>ElemList(n)
     case(ElemList(n),ElemList(List())) =>ElemList(n)

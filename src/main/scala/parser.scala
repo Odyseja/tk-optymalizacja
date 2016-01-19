@@ -107,6 +107,10 @@ class Parser extends JavaTokenParsers {
   }
 
 
+  def tuple_list: Parser[Tuple] = repsep(primary, ",") ^^ Tuple
+
+
+
   def binary(level: Int): Parser[Node] = (
       if (level>maxPrec) unary
       else chainl1( binary(level+1), binaryOp(level) ) // equivalent to binary(level+1) * binaryOp(level)
@@ -137,6 +141,7 @@ class Parser extends JavaTokenParsers {
           case l => { println("Warn: expr_list_comma didn't return NodeList"); l }
          }
       | "{"~>key_datum_list<~"}"
+      | "("~>tuple_list<~")"
   )
 
 
