@@ -8,7 +8,7 @@ import AST._
 // avoid one huge match of cases
 // take into account non-greedy strategies to resolve cases with power laws
 object Simplifier {
-
+  var  ReverseList =List()
   //def simplify(node: Node) = node
 
   def simplify(node: Node): Node = node match {
@@ -17,6 +17,7 @@ object Simplifier {
       val right: Node = simplify(rightNode)
 
       op match {
+        case "**" => pow(left,right)
         case "and" => and(left, right)
         case "or" => or(left, right)
         case "==" => equals(left, right)
@@ -47,8 +48,12 @@ object Simplifier {
     }
     case NodeList(list) => {
       var a = list.map {
-        case f => simplify(f)
+        case f  =>simplify(f)
+        case f  =>simplify(f)
       }
+//      list.map{
+//        case f =>println(f)
+//      }
       a=a.filterNot(f => (f == null))
       var assignments = a.filter(f => (f.isInstanceOf[Assignment]))
       a=a.filterNot(f => f.isInstanceOf[Assignment])
@@ -127,6 +132,17 @@ object Simplifier {
     }
     case _ => false
   }
+  def pow(left: Node, right: Node):Node = (left, right) match {
+      case(leftNode, IntNum(one)) if one ==1 => simplify(leftNode)
+      case(leftNode, IntNum(zero)) if zero == 0 => IntNum(1)
+      case(IntNum(n), IntNum(m)) => IntNum(scala.math.pow(n.toDouble, m.toDouble).toInt)
+      case(BinExpr("**",Variable(x),Variable(n)),Variable(m)) =>  BinExpr("**",Variable(x),BinExpr("*",Variable(n),Variable(m)))
+
+//      case(x,BinExpr("+", n, m)) => BinExpr("**",x,BinExpr("+",m,n))
+//      case(x,BinExpr("*", n, m)) => BinExpr("**",x,BinExpr("*",m,n))
+    case(_, _) => BinExpr("**", left, right)
+  }
+
   //BinaryExpression helpers
   def and(left: Node, right: Node):Node = (left, right) match {
     case(_, FalseConst()) => FalseConst()
@@ -202,6 +218,9 @@ object Simplifier {
     case(_, _) => BinExpr(">", left, right)
   }
   def add(left: Node, right: Node):Node = (left, right) match {
+   // case(BinExpr("**",y,IntNum(two1)),BinExpr("+",BinExpr("*",y1,BinExpr("*",x1,IntNum(two))),BinExpr("**",x,IntNum(two2))) =>
+      //if (y==y1 && x==x1 && two1 == two ==  two2 == 2 ) =>
+     // BinExpr("**",BinExpr("+",x,y),IntNum(2))
     case(ElemList(List()),ElemList(List())) =>ElemList(List())
     case(ElemList(List()),ElemList(n)) =>ElemList(n)
     case(ElemList(n),ElemList(List())) =>ElemList(n)
@@ -241,6 +260,7 @@ object Simplifier {
     case(_, _) => BinExpr("-", left, right)
   }
   def multiply(left: Node, right: Node):Node = (left, right) match {
+    case(BinExpr("**",x1,y1),BinExpr("**",x2,y2)) if(x1==x2)=>BinExpr("**",x1,BinExpr("+", y1,y2))
     case(IntNum(zero), _ ) if zero == 0 => IntNum(0)
     case( _, IntNum(zero) ) if zero == 0 => IntNum(0)
     case(IntNum(one) , nodeRight ) if one == 1 => nodeRight
