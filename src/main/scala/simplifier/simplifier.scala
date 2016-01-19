@@ -85,24 +85,33 @@ object Simplifier {
       ElemList(a.map{
         case f => simplify(f)
       })}
-    case IfInstr(cond, body) => {
+    case IfInstr(cond, body, list) => {
       val condition = simplify(cond)
       val newBody = simplify(body)
+      val newList = list.map(f => simplify(f))
       if(condition==FalseConst()) null
       else if(condition==TrueConst()) newBody
-      else IfInstr(condition, newBody)
+      else IfInstr(condition, newBody, newList)
     }
-    case IfElseInstr(cond, myIf, myElse) => {
+    case IfElseInstr(cond, myIf, list, myElse) => {
       val condition = simplify(cond)
+      val newList = list.map(f => simplify(f))
       if(condition==TrueConst()) simplify(myIf)
       else if(condition==FalseConst()) simplify(myElse)
-      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+      else IfElseInstr(condition, simplify(myIf), newList, simplify(myElse))
     }
     case IfElseExpr(cond, myIf, myElse) => {
       val condition = simplify(cond)
       if(condition==TrueConst()) simplify(myIf)
       else if(condition==FalseConst()) simplify(myElse)
-      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+      else IfElseExpr(condition, simplify(myIf), simplify(myElse))
+    }
+    case ElifInstr(cond, body) =>{
+      val condition = simplify(cond)
+      val newBody = simplify(body)
+      if(condition==FalseConst()) null
+      else if(condition==TrueConst()) newBody
+      else ElifInstr(condition, newBody)
     }
     case Assignment(variable, assign)=> {
       val left: Node = simplify(variable)
