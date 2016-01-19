@@ -96,20 +96,30 @@ case class GetAttr(expr:Node, attr: String) extends Node {
     override def toStr = expr.toStr + "." + attr
 }
 
-case class IfInstr(cond: Node, left: Node) extends Node {
+case class IfInstr(cond: Node, left: Node, elifList: List[Node]) extends Node {
     override def toStr = {
         var str = "if " + cond.toStr + ":\n"
         str += left.toStr.replaceAll("(?m)^", indent)
+        elifList.foreach(f => str+=f.toStr)
         str
     }
 }
 
-case class IfElseInstr(cond: Node, left: Node, right: Node) extends Node {
+case class IfElseInstr(cond: Node, left: Node, elifList: List[Node], right: Node) extends Node {
     override def toStr = {
         var str = "if " + cond.toStr + ":\n"
         str += left.toStr.replaceAll("(?m)^", indent)
+        elifList.foreach(f => str+=f.toStr)
         str += "\nelse:\n"
         str += right.toStr.replaceAll("(?m)^", indent)
+        str
+    }
+}
+
+case class ElifInstr(cond: Node, left: Node) extends Node {
+    override def toStr = {
+        var str = "elif " + cond.toStr + ":\n"
+        str += left.toStr.replaceAll("(?m)^", indent)
         str
     }
 }

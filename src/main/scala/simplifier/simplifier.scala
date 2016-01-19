@@ -3,6 +3,7 @@ package simplifier
 import javax.security.auth.login.FailedLoginException
 
 import AST._
+import com.sun.javafx.fxml.expression.BinaryExpression
 
 // to implement
 // avoid one huge match of cases
@@ -26,8 +27,20 @@ object Simplifier {
         case ">=" => greaterOrEquals(left, right)
         case "<" => lower(left, right)
         case ">" => greater(left, right)
-        case "+" => add(left,right)
-        case "-" => sub(left,right)
+        case "+" => {
+          val bin = add(left,right)
+          bin match {
+              case BinExpr(op1, left1, right1) => commutativity(op1, left1, right1)
+              case _ => bin
+            }
+        }
+        case "-" =>  {
+          val bin = sub(left,right)
+          bin match {
+            case BinExpr(op1, left1, right1) => commutativity(op1, left1, right1)
+            case _ => bin
+          }
+        }
         case "*" => multiply(left,right)
         case "/" => divide(left,right)
         case "%" => modulo(left,right)
@@ -48,12 +61,8 @@ object Simplifier {
     }
     case NodeList(list) => {
       var a = list.map {
-        case f  =>simplify(f)
-        case f  =>simplify(f)
+        case f => simplify(f)
       }
-//      list.map{
-//        case f =>println(f)
-//      }
       a=a.filterNot(f => (f == null))
       var assignments = a.filter(f => (f.isInstanceOf[Assignment]))
       a=a.filterNot(f => f.isInstanceOf[Assignment])
@@ -62,7 +71,8 @@ object Simplifier {
 
       a=a++assignments.distinct
       a=a.filterNot(f => (f == null))
-      NodeList(a)
+      if(a.size==1) a.head
+      else  NodeList(a)
     }
     case KeyDatumList(list) => {
       var a = list.map {
@@ -77,24 +87,33 @@ object Simplifier {
       ElemList(a.map{
         case f => simplify(f)
       })}
-    case IfInstr(cond, body) => {
+    case IfInstr(cond, body, list) => {
       val condition = simplify(cond)
       val newBody = simplify(body)
+      val newList = list.map(f => simplify(f))
       if(condition==FalseConst()) null
       else if(condition==TrueConst()) newBody
-      else IfInstr(condition, newBody)
+      else IfInstr(condition, newBody, newList)
     }
-    case IfElseInstr(cond, myIf, myElse) => {
+    case IfElseInstr(cond, myIf, list, myElse) => {
       val condition = simplify(cond)
+      val newList = list.map(f => simplify(f))
       if(condition==TrueConst()) simplify(myIf)
       else if(condition==FalseConst()) simplify(myElse)
-      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+      else IfElseInstr(condition, simplify(myIf), newList, simplify(myElse))
     }
     case IfElseExpr(cond, myIf, myElse) => {
       val condition = simplify(cond)
       if(condition==TrueConst()) simplify(myIf)
       else if(condition==FalseConst()) simplify(myElse)
-      else IfElseInstr(simplify(cond), simplify(myIf), simplify(myElse))
+      else IfElseExpr(condition, simplify(myIf), simplify(myElse))
+    }
+    case ElifInstr(cond, body) =>{
+      val condition = simplify(cond)
+      val newBody = simplify(body)
+      if(condition==FalseConst()) null
+      else if(condition==TrueConst()) newBody
+      else ElifInstr(condition, newBody)
     }
     case Assignment(variable, assign)=> {
       val left: Node = simplify(variable)
@@ -152,7 +171,6 @@ object Simplifier {
     case(nodeLeft, TrueConst()) => nodeLeft
     case(nodeLeft,nodeRight) if nodeLeft == simplify(nodeRight) => nodeLeft
     case(nodeLeft, nodeRight) => BinExpr("and", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("and", left, right)
   }
   def or(left: Node, right: Node):Node = (left, right) match {
     case(_, TrueConst()) => TrueConst()
@@ -162,7 +180,6 @@ object Simplifier {
     case(FalseConst(),nodeRight) => nodeRight
     case(nodeLeft,nodeRight) if nodeLeft == simplify(nodeRight) => nodeLeft
     case(nodeLeft, nodeRight) => BinExpr("or", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("or", left, right)
   }
   def equals(left: Node, right: Node):Node = (left, right) match {
     case(equalLeft, equalRight) if (equalLeft == equalRight) => TrueConst()
@@ -172,7 +189,6 @@ object Simplifier {
     case(FloatNum(nodeLeft), FloatNum(nodeRight)) => if (nodeLeft == nodeRight) TrueConst() else  FalseConst()
     case(StringConst(nodeLeft), StringConst(nodeRight)) => if (nodeLeft == nodeRight) TrueConst() else  FalseConst()
     case(nodeLeft, nodeRight) => BinExpr("==", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("==", left, right)
   }
 
   def notequals(left: Node, right: Node):Node = (left, right) match {
@@ -183,7 +199,6 @@ object Simplifier {
     case(FloatNum(nodeLeft), FloatNum(nodeRight)) => if (nodeLeft != nodeRight) TrueConst() else  FalseConst()
     case(StringConst(nodeLeft), StringConst(nodeRight)) => if (nodeLeft != nodeRight) TrueConst() else  FalseConst()
     case(nodeLeft, nodeRight) => BinExpr("!=", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("!=", left, right)
   }
   def lowerOrEquals(left: Node, right: Node):Node = (left, right) match {
     case(equalLeft, equalRight) if (equalLeft == equalRight) => TrueConst()
@@ -218,6 +233,7 @@ object Simplifier {
     case(_, _) => BinExpr(">", left, right)
   }
   def add(left: Node, right: Node):Node = (left, right) match {
+    case(Tuple(list1),Tuple(list2)) =>Tuple(list1++list2)
    // case(BinExpr("**",y,IntNum(two1)),BinExpr("+",BinExpr("*",y1,BinExpr("*",x1,IntNum(two))),BinExpr("**",x,IntNum(two2))) =>
       //if (y==y1 && x==x1 && two1 == two ==  two2 == 2 ) =>
      // BinExpr("**",BinExpr("+",x,y),IntNum(2))
@@ -243,7 +259,6 @@ object Simplifier {
       simplify(BinExpr("*",simplify(BinExpr("+",v,x)),simplify(BinExpr("+", y, z))))
     }
     case(nodeLeft, nodeRight) => BinExpr("+", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("+", left, right)
   }
   def sub(left: Node, right: Node):Node = (left, right) match {
     case(nodeLeft,IntNum(zero) ) if zero == 0 => nodeLeft
@@ -271,7 +286,6 @@ object Simplifier {
     case(FloatNum(nodeLeft), IntNum(nodeRight)) => FloatNum(nodeLeft * nodeRight)
     case(nodeLeft, BinExpr("/", IntNum(one), nodeRight)) if one == 1 => BinExpr("/", nodeLeft,nodeRight)
     case(nodeLeft, nodeRight) => BinExpr("*", nodeRight,nodeLeft)
-    case(_, _) => BinExpr("*", left, right)
   }
   def divide(left: Node, right: Node):Node = (left, right) match {
     case(nodeLeft,nodeRight) if( simplify(nodeLeft)== simplify(nodeRight))=> IntNum(1) //////
@@ -326,5 +340,19 @@ object Simplifier {
   def simplifyKeyDatum(keyDatum: Node): KeyDatum = keyDatum match {
     case KeyDatum(key, datum) => KeyDatum(simplify(key), simplify(datum))
     case _ => KeyDatum(StringConst("error"), StringConst("error"))
+  }
+
+  def commutativity(op: String, left:Node, right:Node): Node = (op, left, right) match{
+    case ("-", BinExpr("+", left1, left2), x) => {
+      if(left1.isInstanceOf[Variable] && x.isInstanceOf[Variable] && left1==x) left2
+      else if(left2.isInstanceOf[Variable] && x.isInstanceOf[Variable] && left2==x) left1
+      else BinExpr(op, left, right)
+    }
+    case ("+", BinExpr("-", left1, left2), x) => {
+      if(left2.isInstanceOf[Variable] && x.isInstanceOf[Variable] && x==left2) left1
+      else if(left1.isInstanceOf[Variable] && x.isInstanceOf[Variable] && left1==x) simplify(Unary("-", left2))
+      else BinExpr(op, left, right)
+    }
+    case(_, _, _) => BinExpr(op, left, right)
   }
 }
