@@ -155,7 +155,7 @@ object Simplifier {
       case(leftNode, IntNum(one)) if one ==1 => simplify(leftNode)
       case(leftNode, IntNum(zero)) if zero == 0 => IntNum(1)
       case(IntNum(n), IntNum(m)) => IntNum(scala.math.pow(n.toDouble, m.toDouble).toInt)
-      case(BinExpr("**",Variable(x),Variable(n)),Variable(m)) =>  BinExpr("**",Variable(x),BinExpr("*",Variable(n),Variable(m)))
+      case(BinExpr("**",Variable(x),Variable(n)),Variable(m)) =>  simplify(BinExpr("**",Variable(x),simplify(BinExpr("*",Variable(n),Variable(m)))))
 
       case(x,BinExpr("+", n, m)) => BinExpr("**",x,BinExpr("+",m,n))
       case(x,BinExpr("*", n, m)) => BinExpr("**",x,BinExpr("*",m,n))

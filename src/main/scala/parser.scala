@@ -231,9 +231,6 @@ class Parser extends JavaTokenParsers {
       case target ~ expression => Assignment(target, expression)
   }
 
-  //TODO add elif!!!!!!!!!!!!!!!!
-  //TODO fix tuples
-  //TODO powers!
   def if_else_stmt: Parser[Node] =
         "if" ~> expression ~ (":" ~> suite) ~ rep(elif_stmt) ~("else"~":" ~> suite).? ^^ {
             case expression ~ suite1 ~ list ~ Some(suite2) => IfElseInstr(expression, suite1, list, suite2)
